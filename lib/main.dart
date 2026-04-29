@@ -7,7 +7,6 @@ import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/product_viewmodel.dart';
 import 'viewmodels/chat_viewmodel.dart';
 import 'views/auth_view.dart';
-import 'views/dashboard_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,9 +61,7 @@ class RebuyApp extends StatelessWidget {
       ),
       home: Consumer<AuthViewModel>(
         builder: (context, authViewModel, _) {
-          if (authViewModel.isLoggedIn) {
-            return const DashboardView();
-          }
+          // Always start with login page
           return const AuthView();
         },
       ),
