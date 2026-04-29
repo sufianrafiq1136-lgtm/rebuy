@@ -84,7 +84,10 @@ class _LoginFormState extends State<_LoginForm> {
 
     if (!mounted) return;
 
-    if (!success) {
+    if (success) {
+      // Navigate to dashboard on successful login
+      Navigator.of(context).pushReplacementNamed('/dashboard');
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authViewModel.error ?? 'Login failed'),
@@ -218,7 +221,10 @@ class _SignupFormState extends State<_SignupForm> {
 
     if (!mounted) return;
 
-    if (!success) {
+    if (success) {
+      // Navigate to dashboard on successful signup
+      Navigator.of(context).pushReplacementNamed('/dashboard');
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authViewModel.error ?? 'Signup failed'),
