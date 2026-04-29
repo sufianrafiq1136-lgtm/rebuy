@@ -105,26 +105,44 @@ class _AddProductViewState extends State<AddProductView> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F1F4),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE4E5EA)),
-                    ),
-                    child: DropdownButton<String>(
-                      value: _selectedCategory,
-                      items: _categories.map((category) {
-                        return DropdownMenuItem(value: category, child: Text(category));
-                      }).toList(),
-                      onChanged: (value) => setState(() => _selectedCategory = value ?? 'Electronics'),
-                      isExpanded: true,
-                      underline: const SizedBox(),
-                      style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF2A3148), fontWeight: FontWeight.w600),
-                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Select Category *',
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF1A1D2B)),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _categories.map((category) {
+                      final isSelected = _selectedCategory == category;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = category),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? const LinearGradient(colors: [Color(0xFFFF4F69), Color(0xFFC76FB6)])
+                                : null,
+                            color: isSelected ? null : const Color(0xFFEDEEF2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFFE94E92) : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            category,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isSelected ? Colors.white : const Color(0xFF5A6078),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
                   CustomField(
                     controller: _priceController,
                     hint: 'Price',

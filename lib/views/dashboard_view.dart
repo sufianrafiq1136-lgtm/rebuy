@@ -6,6 +6,8 @@ import '../viewmodels/chat_viewmodel.dart';
 import 'shared_widgets.dart';
 import 'add_product_view.dart';
 import 'edit_product_view.dart';
+import 'product_detail_view.dart';
+import 'my_ads_view.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -166,6 +168,39 @@ class HomeTab extends StatelessWidget {
                             image: product.image,
                             isFavorite: product.isFavorite,
                             isOwner: isOwner,
+                            onCardTap: () async {
+                              final result = await showDialog<String>(
+                                context: context,
+                                builder: (_) => ProductDetailView(product: product),
+                              );
+                              if (result == 'edit' && isOwner) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => EditProductView(product: product)),
+                                );
+                              } else if (result == 'delete' && isOwner) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete Product'),
+                                    content: const Text('Are you sure you want to delete this product?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          productVM.deleteProduct(product.id);
+                                        },
+                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            },
                             onFavoriteTap: () => productVM.toggleFavorite(product.id),
                             onEditTap: isOwner
                                 ? () {
@@ -289,6 +324,39 @@ class ExploreTab extends StatelessWidget {
                       image: trending[i].image,
                       isFavorite: trending[i].isFavorite,
                       isOwner: productVM.isProductOwner(trending[i].sellerId),
+                      onCardTap: () async {
+                        final result = await showDialog<String>(
+                          context: context,
+                          builder: (_) => ProductDetailView(product: trending[i]),
+                        );
+                        if (result == 'edit' && productVM.isProductOwner(trending[i].sellerId)) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => EditProductView(product: trending[i])),
+                          );
+                        } else if (result == 'delete' && productVM.isProductOwner(trending[i].sellerId)) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Product'),
+                              content: const Text('Are you sure you want to delete this product?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    productVM.deleteProduct(trending[i].id);
+                                  },
+                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
                       onFavoriteTap: () => productVM.toggleFavorite(trending[i].id),
                     ),
                   ),
@@ -341,39 +409,74 @@ class SavedTab extends StatelessWidget {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) {
                         final p = favorites[i];
-                        return Container(
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 3))]),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(color: const Color(0xFFEDEEF2), borderRadius: BorderRadius.circular(12)),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(p.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B5C3))),
+                        return GestureDetector(
+                          onTap: () async {
+                            final result = await showDialog<String>(
+                              context: context,
+                              builder: (_) => ProductDetailView(product: p),
+                            );
+                            if (result == 'edit' && productVM.isProductOwner(p.sellerId)) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => EditProductView(product: p)),
+                              );
+                            } else if (result == 'delete' && productVM.isProductOwner(p.sellerId)) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Delete Product'),
+                                  content: const Text('Are you sure you want to delete this product?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        productVM.deleteProduct(p.id);
+                                      },
+                                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 3))]),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(color: const Color(0xFFEDEEF2), borderRadius: BorderRadius.circular(12)),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(p.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B5C3))),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(p.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B))),
-                                      const SizedBox(height: 2),
-                                      Text(p.category, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF8A91A8))),
-                                      const SizedBox(height: 6),
-                                      Text('\$${p.price}', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFFE94E92))),
-                                    ],
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(p.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B))),
+                                        const SizedBox(height: 2),
+                                        Text(p.category, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF8A91A8))),
+                                        const SizedBox(height: 6),
+                                        Text('\$${p.price}', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFFE94E92))),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                IconButton(
-                                  onPressed: () => productVM.toggleFavorite(p.id),
-                                  icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE94E92)),
-                                ),
-                              ],
+                                  IconButton(
+                                    onPressed: () => productVM.toggleFavorite(p.id),
+                                    icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE94E92)),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -691,6 +794,16 @@ class ProfileTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
+                    _ProfileMenuItem(
+                      icon: Icons.shopping_bag_rounded,
+                      label: 'My Ads',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyAdsView()),
+                        );
+                      },
+                    ),
                     _ProfileMenuItem(icon: Icons.shopping_bag_outlined, label: 'My Orders'),
                     _ProfileMenuItem(icon: Icons.location_on_outlined, label: 'My Addresses'),
                     _ProfileMenuItem(icon: Icons.payment_outlined, label: 'Payment Methods'),

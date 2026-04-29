@@ -80,6 +80,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onFavoriteTap;
   final VoidCallback? onEditTap;
   final VoidCallback? onDeleteTap;
+  final VoidCallback? onCardTap;
   final bool isOwner;
 
   const ProductCard({
@@ -93,13 +94,16 @@ class ProductCard extends StatelessWidget {
     this.onFavoriteTap,
     this.onEditTap,
     this.onDeleteTap,
+    this.onCardTap,
     this.isOwner = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    return GestureDetector(
+      onTap: onCardTap,
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -212,6 +216,7 @@ class ProductCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

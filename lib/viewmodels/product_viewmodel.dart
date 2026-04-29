@@ -6,6 +6,7 @@ class ProductViewModel extends ChangeNotifier {
   final FirebaseProductService _productService = FirebaseProductService();
 
   List<Product> _filteredProducts = [];
+  List<Product> _allProducts = []; // Keeps all products including user's own
   List<Product> _favoriteProducts = [];
   bool _isLoading = false;
   String? _error;
@@ -14,6 +15,7 @@ class ProductViewModel extends ChangeNotifier {
   String? _userId;
 
   List<Product> get products => _filteredProducts;
+  List<Product> get allProducts => _allProducts; // Returns all products for "My Ads" view
   List<Product> get favorites => _favoriteProducts;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -33,7 +35,10 @@ class ProductViewModel extends ChangeNotifier {
       if (_selectedCategory == 'All') {
         _productService.getProductsStream().listen(
           (products) {
-            _filteredProducts = products;
+            // Store all products including user's own
+            _allProducts = products;
+            // Exclude current user's products from main feed only
+            _filteredProducts = products.where((p) => p.sellerId != _userId).toList();
             _isLoading = false;
             notifyListeners();
           },
@@ -46,7 +51,10 @@ class ProductViewModel extends ChangeNotifier {
       } else {
         _productService.getProductsByCategoryStream(_selectedCategory).listen(
           (products) {
-            _filteredProducts = products;
+            // Store all products including user's own
+            _allProducts = products;
+            // Exclude current user's products from main feed only
+            _filteredProducts = products.where((p) => p.sellerId != _userId).toList();
             _isLoading = false;
             notifyListeners();
           },
@@ -72,7 +80,10 @@ class ProductViewModel extends ChangeNotifier {
     try {
       _productService.getProductsByCategoryStream(category).listen(
         (products) {
-          _filteredProducts = products;
+          // Store all products including user's own
+          _allProducts = products;
+          // Exclude current user's products from main feed only
+          _filteredProducts = products.where((p) => p.sellerId != _userId).toList();
           _isLoading = false;
           notifyListeners();
         },
@@ -99,7 +110,8 @@ class ProductViewModel extends ChangeNotifier {
         listenToProducts();
       } else {
         final results = await _productService.searchProducts(query);
-        _filteredProducts = results;
+        // Exclude current user's products from search results
+        _filteredProducts = results.where((p) => p.sellerId != _userId).toList();
       }
       _isLoading = false;
       notifyListeners();

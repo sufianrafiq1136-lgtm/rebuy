@@ -31,10 +31,12 @@ class FirebaseProductService {
     return _firestore
         .collection('products')
         .where('category', isEqualTo: category)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) => _productFromFirestore(doc)).toList();
+          final products = snapshot.docs.map((doc) => _productFromFirestore(doc)).toList();
+          // Sort by createdAt on the client side to avoid needing a composite index
+          products.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return products;
         });
   }
 
