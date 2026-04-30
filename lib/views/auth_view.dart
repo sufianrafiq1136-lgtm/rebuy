@@ -46,6 +46,7 @@ class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _emailCtrl;
   late TextEditingController _passCtrl;
+  bool _showPassword = false;
 
   @override
   void initState() {
@@ -118,11 +119,22 @@ class _LoginFormState extends State<_LoginForm> {
           const SizedBox(height: 28),
           CustomField(controller: _emailCtrl, hint: 'Email', validator: _validateEmail),
           const SizedBox(height: 14),
-          CustomField(
+          TextFormField(
             controller: _passCtrl,
-            hint: 'Password',
-            obscure: true,
+            obscureText: !_showPassword,
             validator: _validatePassword,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF2A3148), fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'Password',
+              hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8D93A6)),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                  color: const Color(0xFF8D93A6),
+                ),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
+              ),
+            ),
           ),
           const SizedBox(height: 28),
           Consumer<AuthViewModel>(
@@ -163,6 +175,8 @@ class _SignupFormState extends State<_SignupForm> {
   late TextEditingController _emailCtrl;
   late TextEditingController _passCtrl;
   late TextEditingController _confirmCtrl;
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
 
   @override
   void initState() {
@@ -264,9 +278,41 @@ class _SignupFormState extends State<_SignupForm> {
           const SizedBox(height: 14),
           CustomField(controller: _emailCtrl, hint: 'Email', validator: _validateEmail),
           const SizedBox(height: 14),
-          CustomField(controller: _passCtrl, hint: 'Password', obscure: true, validator: _validatePassword),
+          TextFormField(
+            controller: _passCtrl,
+            obscureText: !_showPassword,
+            validator: _validatePassword,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF2A3148), fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'Password',
+              hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8D93A6)),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                  color: const Color(0xFF8D93A6),
+                ),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
-          CustomField(controller: _confirmCtrl, hint: 'Confirm password', obscure: true, validator: _validateConfirm),
+          TextFormField(
+            controller: _confirmCtrl,
+            obscureText: !_showConfirmPassword,
+            validator: _validateConfirm,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF2A3148), fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'Confirm password',
+              hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8D93A6)),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showConfirmPassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                  color: const Color(0xFF8D93A6),
+                ),
+                onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
+              ),
+            ),
+          ),
           const SizedBox(height: 28),
           Consumer<AuthViewModel>(
             builder: (context, authViewModel, _) => GradientButton(
