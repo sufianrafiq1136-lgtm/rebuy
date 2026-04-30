@@ -59,7 +59,11 @@ class _AddProductViewState extends State<AddProductView> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Product added successfully!')),
           );
-          Navigator.pop(context);
+          // Wait a moment for Firestore to sync
+          Future.delayed(const Duration(milliseconds: 500)).then((_) {
+            viewModel.refreshProducts();
+            Navigator.pop(context);
+          });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${viewModel.error}')),

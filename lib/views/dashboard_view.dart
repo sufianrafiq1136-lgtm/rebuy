@@ -29,6 +29,7 @@ class _DashboardViewState extends State<DashboardView> {
         context.read<ProductViewModel>().setUserId(userId);
         context.read<ChatViewModel>().setUserId(userId);
         context.read<ProductViewModel>().listenToProducts();
+        context.read<ProductViewModel>().listenToFavorites(userId);
         context.read<ChatViewModel>().listenToConversations();
       }
     });
@@ -385,12 +386,16 @@ class SavedTab extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Text('Saved Items', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF1A1D2B))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Saved Items', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF1A1D2B))),
+                  const SizedBox(height: 4),
+                  Text('${favorites.length} item${favorites.length != 1 ? 's' : ''} in your wishlist', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF8A91A8))),
+                ],
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: Text('${favorites.length} items in your wishlist', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF8A91A8))),
-            ),
+            const SizedBox(height: 16),
             Expanded(
               child: favorites.isEmpty
                   ? Center(
@@ -400,6 +405,8 @@ class SavedTab extends StatelessWidget {
                           Icon(Icons.favorite_border_rounded, size: 64, color: Colors.grey.shade300),
                           const SizedBox(height: 12),
                           Text('No saved items yet', style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF8A91A8))),
+                          const SizedBox(height: 4),
+                          Text('Save ads you like from the feed', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFB0B5C3))),
                         ],
                       ),
                     )
@@ -409,47 +416,53 @@ class SavedTab extends StatelessWidget {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) {
                         final p = favorites[i];
-                        return GestureDetector(
-                          onTap: () async {
-                            final result = await showDialog<String>(
-                              context: context,
-                              builder: (_) => ProductDetailView(product: p),
-                            );
-                            if (result == 'edit' && productVM.isProductOwner(p.sellerId)) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => EditProductView(product: p)),
-                              );
-                            } else if (result == 'delete' && productVM.isProductOwner(p.sellerId)) {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Delete Product'),
-                                  content: const Text('Are you sure you want to delete this product?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        productVM.deleteProduct(p.id);
-                                      },
-                                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 3))]),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  Container(
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 3))
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () async {
+                                    final result = await showDialog<String>(
+                                      context: context,
+                                      builder: (_) => ProductDetailView(product: p),
+                                    );
+                                    if (result == 'edit' && productVM.isProductOwner(p.sellerId)) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => EditProductView(product: p)),
+                                      );
+                                    } else if (result == 'delete' && productVM.isProductOwner(p.sellerId)) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Delete Product'),
+                                          content: const Text('Are you sure you want to delete this product?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                productVM.deleteProduct(p.id);
+                                              },
+                                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Container(
                                     width: 72,
                                     height: 72,
                                     decoration: BoxDecoration(color: const Color(0xFFEDEEF2), borderRadius: BorderRadius.circular(12)),
@@ -458,8 +471,43 @@ class SavedTab extends StatelessWidget {
                                       child: Image.network(p.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B5C3))),
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      final result = await showDialog<String>(
+                                        context: context,
+                                        builder: (_) => ProductDetailView(product: p),
+                                      );
+                                      if (result == 'edit' && productVM.isProductOwner(p.sellerId)) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => EditProductView(product: p)),
+                                        );
+                                      } else if (result == 'delete' && productVM.isProductOwner(p.sellerId)) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Delete Product'),
+                                            content: const Text('Are you sure you want to delete this product?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  productVM.deleteProduct(p.id);
+                                                },
+                                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                    },
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -471,12 +519,22 @@ class SavedTab extends StatelessWidget {
                                       ],
                                     ),
                                   ),
-                                  IconButton(
-                                    onPressed: () => productVM.toggleFavorite(p.id),
-                                    icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE94E92)),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Tooltip(
+                                      message: 'Unlike this ad',
+                                      child: IconButton(
+                                        onPressed: () => productVM.toggleFavorite(p.id),
+                                        icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE94E92)),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -795,8 +853,9 @@ class ProfileTab extends StatelessWidget {
                 child: Column(
                   children: [
                     _ProfileMenuItem(
-                      icon: Icons.shopping_bag_rounded,
-                      label: 'My Ads',
+                      icon: Icons.leaderboard_rounded,
+                      label: 'Track Board',
+                      subtitle: 'Manage your posted ads',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -852,12 +911,14 @@ class _StatItem extends StatelessWidget {
 class _ProfileMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final bool isDestructive;
   final VoidCallback? onTap;
 
   const _ProfileMenuItem({
     required this.icon,
     required this.label,
+    this.subtitle,
     this.isDestructive = false,
     this.onTap,
   });
@@ -878,7 +939,19 @@ class _ProfileMenuItem extends StatelessWidget {
             children: [
               Icon(icon, size: 22, color: color),
               const SizedBox(width: 14),
-              Expanded(child: Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: color))),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: color)),
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(subtitle!, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF8A91A8), fontWeight: FontWeight.w400)),
+                      ),
+                  ],
+                ),
+              ),
               Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey.shade400),
             ],
           ),

@@ -17,25 +17,68 @@ class _MyAdsViewState extends State<MyAdsView> {
   String _selectedCategory = 'All';
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh products when this view loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductViewModel>().refreshProducts();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: Text('My Ads', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF1A1D2B))),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Track Board', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF1A1D2B))),
+            Text('Manage your posted ads', style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF8A91A8))),
+          ],
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF3A3F52)),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Consumer<ProductViewModel>(
+            builder: (context, productVM, _) {
+              return IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: Color(0xFF3A3F52)),
+                onPressed: () => productVM.refreshProducts(),
+                tooltip: 'Refresh ads',
+              );
+            },
+          ),
+        ],
       ),
       body: Consumer2<ProductViewModel, AuthViewModel>(
         builder: (context, productVM, authVM, _) {
           final userId = authVM.currentUser?.id;
           
+          if (userId == null) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.warning_outlined, size: 64, color: Colors.grey.shade300),
+                  const SizedBox(height: 12),
+                  Text('Unable to load. Please log in again.', style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
+            );
+          }
+          
           // Get all products by current user from allProducts (which includes user's own)
-          final myProducts = productVM.allProducts.where((p) => p.sellerId == userId).toList();
+          // Also handle case where userId might have whitespace or case differences
+          final myProducts = productVM.allProducts
+              .where((p) => p.sellerId.trim() == userId.trim())
+              .toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // Sort by newest first
           
           // Get unique categories from my products
           final categories = {'All', ...myProducts.map((p) => p.category)};
@@ -85,29 +128,37 @@ class _MyAdsViewState extends State<MyAdsView> {
               ),
               // Products List
               Expanded(
-                child: filteredProducts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey.shade300),
-                            const SizedBox(height: 12),
-                            Text(
-                              _selectedCategory == 'All'
-                                  ? 'No ads yet'
-                                  : 'No ads in $_selectedCategory',
-                              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF8A91A8)),
+                child: Consumer<ProductViewModel>(
+                  builder: (context, productVM, _) {
+                    // Rebuild whenever productVM changes (new products added, etc)
+                    return filteredProducts.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey.shade300),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _selectedCategory == 'All'
+                                      ? 'No ads yet'
+                                      : 'No ads in $_selectedCategory',
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF8A91A8)),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Add your first product to get started!',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFB0B5C3)),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        itemCount: filteredProducts.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) {
-                          final product = filteredProducts[i];
-                          return _MyAdCard(
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            itemCount: filteredProducts.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
+                            itemBuilder: (_, i) {
+                              final product = filteredProducts[i];
+                              return _MyAdCard(
                             product: product,
                             onTap: () async {
                               final result = await showDialog<String>(
@@ -176,7 +227,9 @@ class _MyAdsViewState extends State<MyAdsView> {
                             },
                           );
                         },
-                      ),
+                    );
+                  },
+                ),
               ),
             ],
           );
@@ -198,6 +251,23 @@ class _MyAdCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
   });
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inMinutes < 1) {
+      return 'just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +365,20 @@ class _MyAdCard extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                                 color: const Color(0xFFE94E92),
                               ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(Icons.schedule_rounded, size: 12, color: Colors.grey.shade400),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Posted ${_formatDate(product.createdAt)}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFFB0B5C3),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

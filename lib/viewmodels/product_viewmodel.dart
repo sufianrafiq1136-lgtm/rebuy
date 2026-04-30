@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../models/product_model.dart';
 import '../services/firebase_product_service.dart';
 
@@ -13,6 +14,10 @@ class ProductViewModel extends ChangeNotifier {
   String _selectedCategory = 'All';
   String _searchQuery = '';
   String? _userId;
+  
+  // Stream subscriptions
+  StreamSubscription<List<Product>>? _productsSubscription;
+  StreamSubscription<List<Product>>? _favoritesSubscription;
 
   List<Product> get products => _filteredProducts;
   List<Product> get allProducts => _allProducts; // Returns all products for "My Ads" view
@@ -31,9 +36,12 @@ class ProductViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // Cancel previous subscription if it exists
+    _productsSubscription?.cancel();
+
     try {
       if (_selectedCategory == 'All') {
-        _productService.getProductsStream().listen(
+        _productsSubscription = _productService.getProductsStream().listen(
           (products) {
             // Store all products including user's own
             _allProducts = products;
@@ -49,7 +57,7 @@ class ProductViewModel extends ChangeNotifier {
           },
         );
       } else {
-        _productService.getProductsByCategoryStream(_selectedCategory).listen(
+        _productsSubscription = _productService.getProductsByCategoryStream(_selectedCategory).listen(
           (products) {
             // Store all products including user's own
             _allProducts = products;
@@ -77,8 +85,11 @@ class ProductViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // Cancel previous subscription if it exists
+    _productsSubscription?.cancel();
+
     try {
-      _productService.getProductsByCategoryStream(category).listen(
+      _productsSubscription = _productService.getProductsByCategoryStream(category).listen(
         (products) {
           // Store all products including user's own
           _allProducts = products;
@@ -147,8 +158,11 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   void listenToFavorites(String userId) {
+    // Cancel previous subscription if it exists
+    _favoritesSubscription?.cancel();
+
     try {
-      _productService.getFavoritesStream(userId).listen(
+      _favoritesSubscription = _productService.getFavoritesStream(userId).listen(
         (favorites) {
           _favoriteProducts = favorites;
           notifyListeners();
@@ -162,6 +176,13 @@ class ProductViewModel extends ChangeNotifier {
       _error = 'Failed to listen to favorites: ${e.toString()}';
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _productsSubscription?.cancel();
+    _favoritesSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> addProduct({
@@ -179,6 +200,7 @@ class ProductViewModel extends ChangeNotifier {
     }
 
     try {
+      _error = null; // Clear any previous errors
       final error = await _productService.addProduct(
         name: name,
         category: category,
@@ -191,6 +213,8 @@ class ProductViewModel extends ChangeNotifier {
 
       if (error != null) {
         _error = error;
+      } else {
+        _error = null; // Clear error on success
       }
       notifyListeners();
     } catch (e) {
@@ -269,6 +293,32 @@ class ProductViewModel extends ChangeNotifier {
 
   bool isProductOwner(String sellerId) {
     return _userId == sellerId;
+  }
+
+  /// Refresh products immediately without waiting for stream
+  Future<void> refreshProducts() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final products = await _productService.getProductsStream().first;
+      _allProducts = products;
+      
+      if (_selectedCategory == 'All') {
+        _filteredProducts = products.where((p) => p.sellerId != _userId).toList();
+      } else {
+        _filteredProducts = products
+            .where((p) => p.sellerId != _userId && p.category == _selectedCategory)
+            .toList();
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to refresh products: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }
 
